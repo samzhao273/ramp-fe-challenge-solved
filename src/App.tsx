@@ -13,6 +13,7 @@ export function App() {
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
 
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
@@ -20,14 +21,14 @@ export function App() {
   )
 
   const loadAllTransactions = useCallback(async () => {
-    setIsLoading(true)
-    transactionsByEmployeeUtils.invalidateData()
+    setIsLoadingEmployees(true);
+    await employeeUtils.fetchAll();
+    setIsLoadingEmployees(false);
 
-    await employeeUtils.fetchAll()
+    setIsLoading(true);
     await paginatedTransactionsUtils.fetchAll()
-
-    setIsLoading(false)
-  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
+    setIsLoading(false);
+}, [employeeUtils, paginatedTransactionsUtils])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
@@ -51,11 +52,11 @@ export function App() {
         <hr className="RampBreak--l" />
 
         <InputSelect<Employee>
-          isLoading={isLoading}
+          isLoading={isLoadingEmployees}
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
           label="Filter by employee"
-          loadingLabel="Loading employees"
+          loadingLabel="Loading employees..."
           parseItem={(item) => ({
             value: item.id,
             label: `${item.firstName} ${item.lastName}`,
@@ -64,11 +65,10 @@ export function App() {
             if (newValue === null) {
               return
             }
-
             await loadTransactionsByEmployee(newValue.id)
           }}
-        />
 
+        />
         <div className="RampBreak--l" />
 
         <div className="RampGrid">

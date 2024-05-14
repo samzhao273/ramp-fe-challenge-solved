@@ -1,5 +1,5 @@
 import Downshift from "downshift"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState, useRef } from "react"
 import classNames from "classnames"
 import { DropdownPosition, GetDropdownPositionFn, InputSelectOnChange, InputSelectProps } from "./types"
 
@@ -18,6 +18,8 @@ export function InputSelect<TItem>({
     left: 0,
   })
 
+  const toggleButtonRef = useRef(null);
+
   const onChange = useCallback<InputSelectOnChange<TItem>>(
     (selectedItem) => {
       if (selectedItem === null) {
@@ -29,6 +31,19 @@ export function InputSelect<TItem>({
     },
     [consumerOnChange]
   )
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (toggleButtonRef.current) {
+        setDropdownPosition(getDropdownPosition(toggleButtonRef.current));
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   return (
     <Downshift<TItem>
@@ -47,7 +62,9 @@ export function InputSelect<TItem>({
         getToggleButtonProps,
         inputValue,
       }) => {
-        const toggleProps = getToggleButtonProps()
+
+        const toggleProps = getToggleButtonProps({ ref: toggleButtonRef })
+
         const parsedSelectedItem = selectedItem === null ? null : parseItem(selectedItem)
 
         return (
@@ -71,7 +88,13 @@ export function InputSelect<TItem>({
                 "RampInputSelect--dropdown-container-opened": isOpen,
               })}
               {...getMenuProps()}
-              style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
+              style={{
+                position: 'absolute',
+                top: dropdownPosition.top,
+                left: dropdownPosition.left,
+                maxHeight: '200px',
+                overflowY: 'auto'
+              }}
             >
               {renderItems()}
             </div>
